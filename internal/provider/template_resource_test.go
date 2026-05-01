@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -21,6 +22,15 @@ import (
 	"github.com/coder/coder/v2/codersdk"
 	"github.com/coder/terraform-provider-coderd/integration"
 )
+
+// mustVariablesToSet is a test helper that converts []Variable to types.Set, panicking on error.
+func mustVariablesToSet(vars []Variable) types.Set {
+	s, diags := variablesToSet(context.Background(), vars)
+	if diags.HasError() {
+		panic(fmt.Sprintf("mustVariablesToSet: %v", diags.Errors()))
+	}
+	return s
+}
 
 func TestAccTemplateResource(t *testing.T) {
 	t.Parallel()
@@ -1245,13 +1255,13 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 				{
 					Name:               types.StringValue("bar"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 			configVersions: []TemplateVersion{
@@ -1276,13 +1286,13 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 				{
 					Name:               types.StringValue("bar"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 UUIDValue(aUUID),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 		},
@@ -1293,13 +1303,13 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 				{
 					Name:               types.StringValue("bar"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 			configVersions: []TemplateVersion{
@@ -1324,13 +1334,13 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 UUIDValue(aUUID),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 				{
 					Name:               types.StringValue("bar"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 		},
@@ -1341,13 +1351,13 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 				{
 					Name:               types.StringValue("bar"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 			configVersions: []TemplateVersion{
@@ -1377,13 +1387,13 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 UUIDValue(aUUID),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 				{
 					Name:               types.StringValue("bar"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 UUIDValue(bUUID),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 		},
@@ -1394,13 +1404,13 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 				{
 					Name:               types.StringUnknown(),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 			configVersions: []TemplateVersion{
@@ -1430,13 +1440,13 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 UUIDValue(aUUID),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 				{
 					Name:               types.StringValue("baz"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 UUIDValue(bUUID),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 		},
@@ -1447,7 +1457,7 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("weird_draught12"),
 					DirectoryHash:      types.StringValue("bbb"),
 					ID:                 UUIDValue(aUUID),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 			configVersions: []TemplateVersion{
@@ -1469,7 +1479,7 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringUnknown(),
 					DirectoryHash:      types.StringValue("bbb"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 				},
 			},
 		},
@@ -1480,12 +1490,12 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:          types.StringValue("foo"),
 					DirectoryHash: types.StringValue("aaa"),
 					ID:            UUIDValue(aUUID),
-					TerraformVariables: []Variable{
+					TerraformVariables: mustVariablesToSet([]Variable{
 						{
 							Name:  types.StringValue("foo"),
 							Value: types.StringValue("bar"),
 						},
-					},
+					}),
 				},
 			},
 			configVersions: []TemplateVersion{
@@ -1509,12 +1519,12 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:          types.StringValue("foo"),
 					DirectoryHash: types.StringValue("aaa"),
 					ID:            NewUUIDUnknown(),
-					TerraformVariables: []Variable{
+					TerraformVariables: mustVariablesToSet([]Variable{
 						{
 							Name:  types.StringValue("foo"),
 							Value: types.StringValue("bar"),
 						},
-					},
+					}),
 				},
 			},
 		},
@@ -1525,12 +1535,12 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:          types.StringValue("foo"),
 					DirectoryHash: types.StringValue("aaa"),
 					ID:            UUIDValue(aUUID),
-					TerraformVariables: []Variable{
+					TerraformVariables: mustVariablesToSet([]Variable{
 						{
 							Name:  types.StringValue("foo"),
 							Value: types.StringValue("bar"),
 						},
-					},
+					}),
 				},
 			},
 			configVersions: []TemplateVersion{
@@ -1554,12 +1564,12 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:          types.StringValue("foo"),
 					DirectoryHash: types.StringValue("aaa"),
 					ID:            UUIDValue(aUUID),
-					TerraformVariables: []Variable{
+					TerraformVariables: mustVariablesToSet([]Variable{
 						{
 							Name:  types.StringValue("foo"),
 							Value: types.StringValue("bar"),
 						},
-					},
+					}),
 				},
 			},
 		},
@@ -1570,7 +1580,7 @@ func TestReconcileVersionIDs(t *testing.T) {
 					Name:               types.StringValue("foo"),
 					DirectoryHash:      types.StringValue("aaa"),
 					ID:                 NewUUIDUnknown(),
-					TerraformVariables: []Variable{},
+					TerraformVariables: emptyVariableSet(),
 					Active:             types.BoolValue(false),
 				},
 			},
@@ -1592,6 +1602,74 @@ func TestReconcileVersionIDs(t *testing.T) {
 			cfgHasActiveVersion: false,
 			expectError:         true,
 		},
+		{
+			Name: "UnknownTFVarsHandled",
+			planVersions: []TemplateVersion{
+				{
+					Name:               types.StringValue("foo"),
+					DirectoryHash:      types.StringValue("aaa"),
+					ID:                 UUIDValue(aUUID),
+					TerraformVariables: types.SetUnknown(variableSetElemType),
+				},
+			},
+			configVersions: []TemplateVersion{
+				{
+					Name: types.StringValue("foo"),
+				},
+			},
+			inputState: map[string][]PreviousTemplateVersion{
+				"aaa": {
+					{
+						ID:     aUUID,
+						Name:   "foo",
+						TFVars: map[string]string{"x": "y"},
+					},
+				},
+			},
+			// Unknown tf_vars should trigger a new version (ID becomes unknown)
+			expectedVersions: []TemplateVersion{
+				{
+					Name:               types.StringValue("foo"),
+					DirectoryHash:      types.StringValue("aaa"),
+					ID:                 NewUUIDUnknown(),
+					TerraformVariables: types.SetUnknown(variableSetElemType),
+				},
+			},
+		},
+		{
+			Name: "NullTFVarsHandled",
+			planVersions: []TemplateVersion{
+				{
+					Name:               types.StringValue("foo"),
+					DirectoryHash:      types.StringValue("aaa"),
+					ID:                 UUIDValue(aUUID),
+					TerraformVariables: types.SetNull(variableSetElemType),
+				},
+			},
+			configVersions: []TemplateVersion{
+				{
+					Name: types.StringValue("foo"),
+				},
+			},
+			inputState: map[string][]PreviousTemplateVersion{
+				"aaa": {
+					{
+						ID:     aUUID,
+						Name:   "foo",
+						TFVars: map[string]string{},
+					},
+				},
+			},
+			// Null tf_vars should not cause a panic and should not trigger a new version
+			expectedVersions: []TemplateVersion{
+				{
+					Name:               types.StringValue("foo"),
+					DirectoryHash:      types.StringValue("aaa"),
+					ID:                 UUIDValue(aUUID),
+					TerraformVariables: types.SetNull(variableSetElemType),
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -1602,10 +1680,187 @@ func TestReconcileVersionIDs(t *testing.T) {
 			diag := c.planVersions.reconcileVersionIDs(c.inputState, c.configVersions, c.cfgHasActiveVersion)
 			if c.expectError {
 				require.True(t, diag.HasError())
-			} else {
-				require.Equal(t, c.expectedVersions, c.planVersions)
-			}
-		})
+				} else {
+					require.Equal(t, c.expectedVersions, c.planVersions)
+				}
+			})
 
+		}
+}
+
+// TestUnknownTFVarsDeserialization validates that the TemplateVersion struct
+// can be deserialized from a types.List even when tf_vars or provisioner_tags
+// contain unknown values. This is the exact code path that failed in issue #305
+// when using for-expressions over variables with sensitive/unknown values.
+func TestUnknownTFVarsDeserialization(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// Build the element type matching the versions schema.
+	versionObjType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":             UUIDType,
+			"name":           types.StringType,
+			"message":        types.StringType,
+			"directory":      types.StringType,
+			"directory_hash": types.StringType,
+			"active":         types.BoolType,
+			"tf_vars": types.SetType{
+				ElemType: variableSetElemType,
+			},
+			"provisioner_tags": types.SetType{
+				ElemType: variableSetElemType,
+			},
+		},
 	}
+
+	// Simulate a version where tf_vars is unknown (e.g. from a for-expression
+	// over a map containing sensitive/unknown values)
+	versionVal, diags := types.ObjectValue(
+		versionObjType.AttrTypes,
+		map[string]attr.Value{
+			"id":               NewUUIDUnknown(),
+			"name":             types.StringValue("stable-1"),
+			"message":          types.StringValue(""),
+			"directory":        types.StringValue("/tmp/test"),
+			"directory_hash":   types.StringUnknown(),
+			"active":           types.BoolValue(true),
+			"tf_vars":          types.SetUnknown(variableSetElemType),
+			"provisioner_tags": types.SetUnknown(variableSetElemType),
+		},
+	)
+	require.False(t, diags.HasError(), "building version object: %v", diags.Errors())
+
+	// Wrap in a list (matching the versions attribute schema)
+	listVal, diags := types.ListValue(versionObjType, []attr.Value{versionVal})
+	require.False(t, diags.HasError(), "building list: %v", diags.Errors())
+
+	// This is the exact call that failed before the fix:
+	// ElementsAs into []TemplateVersion would error with
+	// "Received unknown value, however the target type cannot handle unknown values"
+	var data []TemplateVersion
+	diags = listVal.ElementsAs(ctx, &data, false)
+	require.False(t, diags.HasError(), "ElementsAs should handle unknown tf_vars: %v", diags.Errors())
+
+	require.Len(t, data, 1)
+	require.True(t, data[0].TerraformVariables.IsUnknown(), "tf_vars should be unknown")
+	require.True(t, data[0].ProvisionerTags.IsUnknown(), "provisioner_tags should be unknown")
+	require.Equal(t, "stable-1", data[0].Name.ValueString())
+
+	// Helper to build a version object and deserialize it, returning the result.
+	buildAndDeserialize := func(t *testing.T, tfVars, provTags attr.Value) []TemplateVersion {
+		t.Helper()
+		obj, d := types.ObjectValue(
+			versionObjType.AttrTypes,
+			map[string]attr.Value{
+				"id":               NewUUIDUnknown(),
+				"name":             types.StringValue("stable-1"),
+				"message":          types.StringValue(""),
+				"directory":        types.StringValue("/tmp/test"),
+				"directory_hash":   types.StringUnknown(),
+				"active":           types.BoolValue(true),
+				"tf_vars":          tfVars,
+				"provisioner_tags": provTags,
+			},
+		)
+		require.False(t, d.HasError(), "building version object: %v", d.Errors())
+		lv, d := types.ListValue(versionObjType, []attr.Value{obj})
+		require.False(t, d.HasError(), "building list: %v", d.Errors())
+		var result []TemplateVersion
+		d = lv.ElementsAs(ctx, &result, false)
+		require.False(t, d.HasError(), "ElementsAs failed: %v", d.Errors())
+		require.Len(t, result, 1)
+		return result
+	}
+
+	knownVarSet, setDiags := variablesToSet(ctx, []Variable{
+		{Name: types.StringValue("secret-1"), Value: types.StringValue("s3cret")},
+		{Name: types.StringValue("normal-info-1"), Value: types.StringValue("hello")},
+	})
+	require.False(t, setDiags.HasError())
+
+	knownTagSet, setDiags := variablesToSet(ctx, []Variable{
+		{Name: types.StringValue("scope"), Value: types.StringValue("org")},
+	})
+	require.False(t, setDiags.HasError())
+
+	// tf_vars known, provisioner_tags known
+	t.Run("BothKnown", func(t *testing.T) {
+		result := buildAndDeserialize(t, knownVarSet, knownTagSet)
+		require.False(t, result[0].TerraformVariables.IsUnknown())
+		require.False(t, result[0].ProvisionerTags.IsUnknown())
+		var vars []Variable
+		d := result[0].TerraformVariables.ElementsAs(ctx, &vars, false)
+		require.False(t, d.HasError())
+		require.Len(t, vars, 2)
+		var tags []Variable
+		d = result[0].ProvisionerTags.ElementsAs(ctx, &tags, false)
+		require.False(t, d.HasError())
+		require.Len(t, tags, 1)
+	})
+
+	// tf_vars known, provisioner_tags unknown
+	t.Run("TFVarsKnown_TagsUnknown", func(t *testing.T) {
+		result := buildAndDeserialize(t, knownVarSet, types.SetUnknown(variableSetElemType))
+		require.False(t, result[0].TerraformVariables.IsUnknown())
+		require.True(t, result[0].ProvisionerTags.IsUnknown())
+	})
+
+	// tf_vars unknown, provisioner_tags known
+	t.Run("TFVarsUnknown_TagsKnown", func(t *testing.T) {
+		result := buildAndDeserialize(t, types.SetUnknown(variableSetElemType), knownTagSet)
+		require.True(t, result[0].TerraformVariables.IsUnknown())
+		require.False(t, result[0].ProvisionerTags.IsUnknown())
+	})
+
+	// tf_vars null, provisioner_tags unknown
+	t.Run("TFVarsNull_TagsUnknown", func(t *testing.T) {
+		result := buildAndDeserialize(t, types.SetNull(variableSetElemType), types.SetUnknown(variableSetElemType))
+		require.True(t, result[0].TerraformVariables.IsNull())
+		require.True(t, result[0].ProvisionerTags.IsUnknown())
+	})
+
+	// tf_vars unknown, provisioner_tags null
+	t.Run("TFVarsUnknown_TagsNull", func(t *testing.T) {
+		result := buildAndDeserialize(t, types.SetUnknown(variableSetElemType), types.SetNull(variableSetElemType))
+		require.True(t, result[0].TerraformVariables.IsUnknown())
+		require.True(t, result[0].ProvisionerTags.IsNull())
+	})
+
+	// tf_vars known, provisioner_tags null
+	t.Run("TFVarsKnown_TagsNull", func(t *testing.T) {
+		result := buildAndDeserialize(t, knownVarSet, types.SetNull(variableSetElemType))
+		require.False(t, result[0].TerraformVariables.IsUnknown())
+		require.True(t, result[0].ProvisionerTags.IsNull())
+	})
+
+	// tf_vars null, provisioner_tags known
+	t.Run("TFVarsNull_TagsKnown", func(t *testing.T) {
+		result := buildAndDeserialize(t, types.SetNull(variableSetElemType), knownTagSet)
+		require.True(t, result[0].TerraformVariables.IsNull())
+		require.False(t, result[0].ProvisionerTags.IsUnknown())
+	})
+
+	// tf_vars empty, provisioner_tags empty
+	t.Run("BothEmpty", func(t *testing.T) {
+		result := buildAndDeserialize(t, emptyVariableSet(), emptyVariableSet())
+		require.False(t, result[0].TerraformVariables.IsUnknown())
+		require.False(t, result[0].TerraformVariables.IsNull())
+		require.False(t, result[0].ProvisionerTags.IsUnknown())
+		require.False(t, result[0].ProvisionerTags.IsNull())
+		var vars, tags []Variable
+		d := result[0].TerraformVariables.ElementsAs(ctx, &vars, false)
+		require.False(t, d.HasError())
+		require.Empty(t, vars)
+		d = result[0].ProvisionerTags.ElementsAs(ctx, &tags, false)
+		require.False(t, d.HasError())
+		require.Empty(t, tags)
+	})
+
+	// Both null
+	t.Run("BothNull", func(t *testing.T) {
+		result := buildAndDeserialize(t, types.SetNull(variableSetElemType), types.SetNull(variableSetElemType))
+		require.True(t, result[0].TerraformVariables.IsNull())
+		require.True(t, result[0].ProvisionerTags.IsNull())
+	})
 }
