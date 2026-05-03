@@ -1036,6 +1036,74 @@ resource "coderd_template" "sample" {
 	})
 }
 
+func TestAccTemplateResourceSensitiveTFVars(t *testing.T) {
+	t.Parallel()
+	cfg := `
+provider coderd {
+	url   = %q
+	token = %q
+}
+
+variable "secret" {
+	sensitive = true
+	default   = %q
+}
+
+resource "time_static" "trigger" {
+	triggers = {
+		secret = var.secret
+	}
+}
+
+resource "coderd_template" "sample" {
+  name = "sensitive-tfvars-test"
+  versions = [
+    {
+      name = "v-${time_static.trigger.rfc3339}"
+      directory = %q
+      active    = true
+      tf_vars = [
+        {
+          name  = "secret"
+          value = var.secret
+        }
+      ]
+    }
+  ]
+}
+`
+
+	ctx := t.Context()
+	client := integration.StartCoder(ctx, t, "template_sensitive_tfvars_acc")
+
+	exTemplate := t.TempDir()
+	err := cp.Copy("../../integration/template-test/example-template", exTemplate)
+	require.NoError(t, err)
+
+	cfgStep1 := fmt.Sprintf(cfg, client.URL.String(), client.SessionToken(), "initial-secret", exTemplate)
+	cfgStep2 := fmt.Sprintf(cfg, client.URL.String(), client.SessionToken(), "changed-secret", exTemplate)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		IsUnitTest:               true,
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"time": {
+				Source:            "hashicorp/time",
+				VersionConstraint: ">=0.9.0",
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: cfgStep1,
+			},
+			{
+				Config: cfgStep2,
+			},
+		},
+	})
+}
+
 type testAccTemplateResourceConfig struct {
 	URL   string
 	Token string
